@@ -1,0 +1,247 @@
+I followed this tutorial:
+    Getting Started with Java 21 - JDK 21 First Look
+        https://www.youtube.com/watch?v=aqc5YB7TISM
+
+I installed SdkMan to manage java versions from now on...
+    https://sdkman.io/usage#listversions
+
+Useful SdkMan commands ---> check README.md file
+
+Check here all new features of Java 21 : https://openjdk.org/projects/jdk/21/
+!!! Remember that you need to open preview mode to run the preview features.
+
+How to compile and run apps with enable preview?
+    javac --release 21 --enable-preview App.java
+    java --enable-preview App
+
+
+TODO Commit these ...then do a recap of changes from jdk 10 towards present time...and do similar projects for them
+TODO AFTER PREvious todo, continue with new elements of this jdk
+
+JDK 21 new features
+
+    1.JEP 445: Unnamed Classes and Instance Main Methods
+        First, we enhance the protocol by which Java programs are launched to allow instance main methods. Such
+        methods are not static, need not be public, and need not have a String[] parameter.
+
+        Second, we introduce unnamed classes to make the class declaration implicit:
+            void main() {
+                System.out.println("Hello, World!");
+            }
+
+        A flexible launch protocol
+        We enhance the launch protocol to offer more flexibility in the declaration of a program's entry point and,
+        in particular, to allow instance main methods, as follows:
+
+            -Allow the main method of a launched class to have public, protected, or default (i.e., package) access.
+            -If a launched class contains no static main method with a String[] parameter but does contain a static
+            main method with no parameters, then invoke that method.
+            -If a launched class has no static main method but has a non-private zero-parameter constructor
+            (i.e., of public, protected, or package access), and a non-private instance main method, then construct
+            an instance of the class. If the class has an instance main method with a String[] parameter then invoke
+            that method; otherwise, invoke the instance main method with no parameters.
+
+        Selecting a main method
+            When launching a class, the launch protocol chooses the first of the following methods to invoke:
+                -A static void main(String[] args) method of non-private access (i.e., public, protected or package)
+                declared in the launched class,
+                -A static void main() method of non-private access declared in the launched class,
+                -A void main(String[] args) instance method of non-private access declared in the launched class or
+                inherited from a superclass, or, finally,
+                -A void main() instance method of non-private access declared in the launched class or inherited from
+                 a superclass.
+
+        Unnamed classes
+            classes in the unnamed package cannot be referenced explicitly by classes in named packages
+
+            Henceforth, when the Java compiler encounters a source file with a method that is not enclosed in a class
+            declaration it will implicitly consider such methods, as well as any unenclosed fields and any classes
+            declared in the file, to be members of an unnamed top-level class.
+
+            An unnamed class is always a member of the unnamed package. It is also final and cannot implement any
+            interface nor extend any class other than Object. An unnamed class cannot be referenced by name, so
+            there can be no method references to its static methods; the this keyword can still be used, however,
+            and so can method references to instance methods.
+
+            No code can refer to an unnamed class by name, so instances of an unnamed class cannot be constructed
+            directly. Such a class is useful only as a standalone program or as an entry point to a program.
+            Therefore, an unnamed class must have a main method that can be launched as described above.
+            This requirement is enforced by the Java compiler.
+
+            while an unnamed class has a default zero-parameter constructor, it can have no other constructor.
+
+    2. JEP 430: String Templates
+        String templates complement Java's existing string literals and text blocks by coupling literal text with
+        embedded expressions and template processors to produce specialized results.
+
+        Goals
+            -Simplify the writing of Java programs by making it easy to express strings that include values computed at
+            run time.
+            -Enhance the readability of expressions that mix text and expressions, whether the text fits on a single
+            source line (as with string literals) or spans several source lines (as with text blocks)
+            -Improve the security of Java programs that compose strings from user-provided values and pass them to
+            other systems (e.g., building queries for databases) by supporting validation and transformation of both
+            the template and the values of its embedded expressions
+            -Simplify the use of APIs that accept strings written in non-Java languages (e.g., SQL, XML, and JSON).
+
+        Can we do better?
+            For Java, we would like to have a string composition feature that achieves the clarity of interpolation but
+            achieves a safer result out-of-the-box, perhaps trading off a small amount of convenience to gain a large amount
+            of safety.
+
+            Each kind of template has rules for validation and transformation, such as "escape all quotes" for SQL
+            statements, "allow only legal character entities" for HTML documents, and "localize to the language configured
+            in the OS" for natural-language messages.
+
+        Description
+            Template expressions are a new kind of expression in the Java programming language. Template expressions
+            can perform string interpolation but are also programmable in a way that helps developers compose strings
+            safely and efficiently. In addition, template expressions are not limited to composing strings — they can
+            turn structured text into any kind of object, according to domain-specific rules.
+
+            Syntactically, a template expression resembles a string literal with a prefix. There is a template expression
+            on the second line of this code:
+                String name = "Joan";
+                String info = STR."My name is \{name}";
+
+            The template expression STR."My name is \{name}" consists of:
+                -A template processor (STR);
+                -A dot character (U+002E), as seen in other kinds of expressions; and
+                -A template ("My name is \{name}") which contains an embedded expression (\{name}).
+
+         !! STR is a public static final field that is automatically imported into every Java source file.
+
+        Ensuring safety
+            The design of template expressions deliberately makes it impossible to go directly from a string literal or
+            text block with embedded expressions to a String with the expressions' values interpolated. This prevents
+            dangerously incorrect strings from spreading through a program. The string literal is processed by a
+            template processor, which has explicit responsibility for safely interpolating and validating a result,
+            String or otherwise.
+
+        User-defined template processors
+            Earlier we saw the template processors STR and FMT, which make it look as if a template processor is an
+            object accessed via a field. That is useful shorthand, but it is more accurate to say that a template
+            processor is an object which is an instance of the functional interface StringTemplate.Processor.
+            In particular, the object's class implements the single abstract method of that interface, process,
+            which takes a StringTemplate and returns an object. A static field such as STR merely stores an instance
+            of such a class
+
+            An instance of StringTemplate represents the string template or text block template that appears as the
+            template in a template expression
+
+            The StringTemplate class exposes these parts directly:
+                -StringTemplate::fragments returns a list of the text fragments coming before and after the embedded
+                expressions in the string template or text block template:
+                -StringTemplate::values returns a list of the values produced by evaluating the embedded expressions in
+                the order they appear in the source code.
+            The fragments() of a StringTemplate are constant across all evaluations of a template expression, while
+            values() is computed fresh for each evaluation.
+
+        The template processor API
+            These example processors return instances of String and throw no exceptions, so template expressions which
+            use them will always evaluate successfully.
+            In contrast, a template processor that implements the StringTemplate.Processor interface directly can be
+            fully general. It can return objects of any type, not just String. It can also throw checked exceptions if
+            processing fails, either because the template is invalid or for some other reason, such as an I/O error.
+            If a processor throws checked exceptions then developers who use it in template expressions must handle
+            processing failures with try-catch statements, or else propagate the exceptions to callers.
+
+        Safely composing and executing database queries
+            see example in class QueryBuilder
+
+    3. JEP 431: Sequenced Collections
+        Motivation
+            Java’s collections framework lacks a collection type that represents a sequence of elements with a defined
+            encounter order. It also lacks a uniform set of operations that apply across such collections. These gaps
+            have been a repeated source of problems and complaints.
+            For example, List and Deque both define an encounter order but their common supertype is Collection, which
+            does not. Similarly, Set does not define an encounter order, and subtypes such as HashSet do not define one,
+            but subtypes such as SortedSet and LinkedHashSet do.
+
+        Description
+            We define new interfaces for sequenced collections, sequenced sets, and sequenced maps, and then retrofit
+            them into the existing collections type hierarchy. All of the new methods declared in these interfaces have
+            default implementations.
+
+        Sequenced collections
+            A sequenced collection is a Collection whose elements have a defined encounter order.
+            (The word "sequenced" as used here is the past participle of the verb to sequence,
+             meaning "to arrange elements in a particular order.") A sequenced collection has first and
+             last elements, and the elements between them have successors and predecessors.
+
+            SequencedCollection  this is the new interface
+
+            A sequenced collection supports common operations at either end, and it supports processing
+            the elements from first to last and from last to first (i.e., forward and reverse).
+            interface SequencedCollection<E> extends Collection<E> {
+                // new method
+                SequencedCollection<E> reversed();
+                // methods promoted from Deque
+                void addFirst(E);
+                void addLast(E);
+                E getFirst();
+                E getLast();
+                E removeFirst();
+                E removeLast();
+            }
+
+            The new reversed() method provides a reverse-ordered view of the original collection.
+            Any modifications to the original collection are visible in the view. If permitted,
+            modifications to the view write through to the original collection.
+
+            The reverse-ordered view enables all the different sequenced types to process elements
+            in both directions, using all the usual iteration mechanisms: Enhanced for loops,
+            explicit iterator() loops, forEach(), stream(), parallelStream(), and toArray().
+
+            For example, obtaining a reverse-ordered stream from a LinkedHashSet was previously quite
+            difficult; now it is simply:
+                linkedHashSet.reversed().stream()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
