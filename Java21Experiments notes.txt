@@ -15,8 +15,7 @@ How to compile and run apps with enable preview?
     java --enable-preview App
 
 
-TODO Commit these ...then do a recap of changes from jdk 10 towards present time...and do similar projects for them
-TODO AFTER PREvious todo, continue with new elements of this jdk
+TODO continue with new elements of this jdk
 
 JDK 21 new features
 
